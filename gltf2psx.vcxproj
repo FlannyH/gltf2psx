@@ -136,6 +136,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="color_quantizer.cpp" />
     <ClCompile Include="dynamic_allocator.cpp" />
     <ClCompile Include="External\source\glm\glm.cpp" />
     <ClCompile Include="logger.cpp" />
@@ -144,6 +145,7 @@
     <ClCompile Include="resource_manager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="color_quantizer.h" />
     <ClInclude Include="common_defines.h" />
     <ClInclude Include="dynamic_allocator.h" />
     <ClInclude Include="External\include\entt\entt.hpp" />

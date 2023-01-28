@@ -14,6 +14,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
+#include "color_quantizer.h"
 #include "common_defines.h"
 #include "dynamic_allocator.h"
 #include "logger.h"
@@ -138,17 +139,14 @@ bool ModelResource::load(std::string path, ResourceManager* resource_manager)
                 size_t offset_y = (index_image_colour / 512);
                 printf("rect %i: [%i, %i]\n", index_image_colour, offset_x, offset_y);
                 Pixel32* pixels = (Pixel32*)image.image.data();
-                for (size_t y = 0; y < 64; ++y) {
-                    for (size_t x = 0; x < 64; ++x) {
-                        texture_atlas[(x + offset_x) + (y + offset_y) * 512] = pixels[x + y * 64];
-                    }
-                }
+                auto quantized_image = quantize_image(pixels, image.width, image.height, 16, true, 64, 16);
+                stbi_write_png((path + "_" + image.name + "_quantized.png").c_str(), image.width, image.height, 4, quantized_image.quantized_pixels.data(), 0);
+                stbi_write_png((path + "_" + image.name + "_original.png").c_str(), image.width, image.height, 4, image.image.data(), 0);
 			}
 			materials_vector.push_back(pbr_material);
 		}
 	}
 
-    stbi_write_png((path + "_atlas.png").c_str(), 512, 256, 4, texture_atlas, 0);
 
 	//Go through each node and add it to the primitive vector
 	std::unordered_map<int, MeshBufferData> primitives;

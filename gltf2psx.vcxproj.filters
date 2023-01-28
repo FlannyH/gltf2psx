@@ -33,6 +33,9 @@
     <ClCompile Include="logger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="color_quantizer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common_defines.h">
@@ -927,6 +930,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="External\include\tinygltf\tiny_gltf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="color_quantizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
