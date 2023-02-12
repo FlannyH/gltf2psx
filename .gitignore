@@ -1,2 +1,8 @@
 .vs/
 x64/
+target/
+
+
+# Added by cargo
+
+/target
