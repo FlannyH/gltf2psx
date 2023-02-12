@@ -1,28 +1,19 @@
-# Flan's PSX Model file specification
+# Flan's PSX Texture Collection file specification
 [Back to main page.](../README.md)
-## Model File (.msh)
-This file contains a model with a certain amount of submeshes. Submeshes could be used for things like level sections, or different variations of models
-| Type        | Description                        |
-|-------------|------------------------------------|
-| u32         | Number of submeshes in this model. |
-| MeshDesc[]  | Array of mesh descriptions.        |
-| VertexPSX[] | Raw vertex data                    |
 
-## MeshDesc
-| Type | Description                       |
-|------|-----------------------------------|
-| u16  | First vertex index for this model |
-| u16  | Number of vertices for this model |
+## Texture Collection file (.txc)
+|Type|Description|
+|----|-----------|
+|u32|Number of texture cells in this file.|
+|TextureCellDesc[]| Array of texture cell descriptions.|
+|u16|Number of 16 color palettes in this file.
+|u16[]|Raw 16-bit (R5G5B5A1) palette color values.|
+|u8[]|Raw texture indices.
 
-## VertexPSX
-| Type | Description             |
-|------|-------------------------|
-| i16  |Position X               |
-| i16  |Position Y               |
-| i16  |Position Z               |
-| u8   |Color R                  |
-| u8   |Color G                  |
-| u8   |Color B                  |
-| u8   |Texture Coordinate U     |
-| u8   |Texture Coordinate V     |
-| u8   |Texture atlas cell index. Only the first vertex's index is actually used. |
+## TextureCellDesc
+|Type|Description|
+|----|-----------|
+|u32| Offset in raw texture indices array.|
+|u16| Index into palette array.|
+|u8| Texture width in pixels.|
+|u8| Texture height in pixels.|
