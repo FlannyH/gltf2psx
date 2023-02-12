@@ -93,12 +93,6 @@ fn create_vertex_array(
         let buffer_slice = buffer_base.get(buffer_offset..buffer_end).unwrap();
 
         // Assign to the vectors
-        println!(
-            "name: {}, size: {}, count: {}",
-            name.to_string(),
-            accessor.size(),
-            accessor.count()
-        );
         match name.to_string().as_str() {
             "POSITION" => {
                 let values = convert_gltf_buffer_to_f32(buffer_slice, &accessor);
@@ -211,8 +205,6 @@ fn traverse_nodes(
     local_transform: Mat4,
     primitives_processed: &mut HashMap<String, Mesh>,
 ) {
-    println!("\t\t\t{}: {}", node.index(), node.name().unwrap());
-
     // Convert translation in GLTF model to a Mat4.
     let node_transform = Transform {
         scale: glam::vec3(
@@ -242,7 +234,6 @@ fn traverse_nodes(
         let primitives = mesh.primitives();
 
         for primitive in primitives {
-            println!("Creating vertex array for mesh {}", node.name().unwrap());
             let mut mesh_buffer_data =
                 create_vertex_array(&primitive, mesh_data, new_local_transform);
             let material = String::from(primitive.material().name().unwrap_or("None"));
@@ -269,18 +260,12 @@ impl Model {
         let (gltf_document, mesh_data, image_data) = gltf_file.unwrap();
 
         // Loop over each scene
-        println!("Scenes:");
         let scene = gltf_document.default_scene();
         if let Some(scene) = scene {
             // For each scene, get the nodes
-            println!("\t{}: {}:", scene.index(), scene.name().unwrap());
-
-            // Print node debug
-            println!("\t\tNodes:");
             for node in scene.nodes() {
                 traverse_nodes(&node, &mesh_data, Mat4::IDENTITY, &mut self.meshes);
             }
-            println!("test");
         }
 
         // Get all the textures from the GLTF
