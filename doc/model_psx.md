@@ -5,6 +5,7 @@
 This file contains a model with a certain amount of submeshes. Submeshes could be used for things like level sections, or different variations of models
 | Type | Name               | Description                        |
 |------|--------------------|------------------------------------|
+| char[4] | file_magic                |File identifier magic, always "FMSH"
 | u32  | n_submeshes        | Number of submeshes in this model. |
 | u32  | offset_mesh_desc   | Offset into the binary section to the start of the array of MeshDesc structs.|
 | u32  | offset_vertex_data | Offset into the binary section to the start of the raw VertexPSX data.        |
