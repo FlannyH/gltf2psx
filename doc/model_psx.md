@@ -3,11 +3,13 @@
 
 ## Model File (.msh)
 This file contains a model with a certain amount of submeshes. Submeshes could be used for things like level sections, or different variations of models
-| Type        | Description                        |
-|-------------|------------------------------------|
-| u32         | Number of submeshes in this model. |
-| MeshDesc[]  | Array of mesh descriptions.        |
-| VertexPSX[] | Raw vertex data                    |
+| Type | Name               | Description                        |
+|------|--------------------|------------------------------------|
+| u32  | n_submeshes        | Number of submeshes in this model. |
+| u32  | offset_mesh_desc   | Offset into the binary section to the start of the array of MeshDesc structs.|
+| u32  | offset_vertex_data | Offset into the binary section to the start of the raw VertexPSX data.        |
+
+All offsets are relative to the start of this binary section.
 
 ## MeshDesc
 | Type | Description                       |
@@ -26,4 +28,4 @@ This file contains a model with a certain amount of submeshes. Submeshes could b
 | u8   |Color B                  |
 | u8   |Texture Coordinate U     |
 | u8   |Texture Coordinate V     |
-| u8   |Texture atlas cell index. Only the first vertex's index is actually used. |
+| u8   |Texture collection cell index. Only the first vertex's index is actually used. |
