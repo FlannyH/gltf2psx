@@ -13,24 +13,26 @@ This file contains a model with a certain amount of submeshes. Submeshes could b
 All offsets are relative to the start of this binary section.
 
 ## MeshDesc
-| Type | Description                         |
-|------|-------------------------------------|
-| u16  | First vertex index for this model   |
-| u16  | Number of vertices for this model   |
-| i16  | Axis aligned bounding box minimum X |
-| i16  | Axis aligned bounding box maximum X |
-| i16  | Axis aligned bounding box minimum Y |
-| i16  | Axis aligned bounding box maximum Y |
+| Type | Name         | Description                         |
+|------|--------------|-------------------------------------|
+| u16  | vertex_start | First vertex index for this model   |
+| u16  | n_vertices   | Number of vertices for this model   |
+| i16  | x_min        | Axis aligned bounding box minimum X |
+| i16  | x_max        | Axis aligned bounding box maximum X |
+| i16  | y_min        | Axis aligned bounding box minimum Y |
+| i16  | y_max        | Axis aligned bounding box maximum Y |
+| i16  | z_min        | Axis aligned bounding box minimum Z |
+| i16  | z_max        | Axis aligned bounding box maximum Z |
 
 ## VertexPSX
-| Type | Description             |
-|------|-------------------------|
-| i16  |Position X               |
-| i16  |Position Y               |
-| i16  |Position Z               |
-| u8   |Color R                  |
-| u8   |Color G                  |
-| u8   |Color B                  |
-| u8   |Texture Coordinate U     |
-| u8   |Texture Coordinate V     |
-| u8   |Texture collection cell index. Only the first vertex's index is actually used. |
+| Type | Name          | Description                                                                   |
+|------|---------------|-------------------------------------------------------------------------------|
+| i16  | x             |Position X                                                                     |
+| i16  | y             |Position Y                                                                     |
+| i16  | z             |Position Z                                                                     |
+| u8   | r             |Color R                                                                        |
+| u8   | g             |Color G                                                                        |
+| u8   | b             |Color B                                                                        |
+| u8   | u             |Texture Coordinate U                                                           |
+| u8   | v             |Texture Coordinate V                                                           |
+| u8   | texture_index |Texture collection cell index. Only the first vertex's index is actually used. |
