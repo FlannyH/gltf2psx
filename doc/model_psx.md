@@ -13,10 +13,14 @@ This file contains a model with a certain amount of submeshes. Submeshes could b
 All offsets are relative to the start of this binary section.
 
 ## MeshDesc
-| Type | Description                       |
-|------|-----------------------------------|
-| u16  | First vertex index for this model |
-| u16  | Number of vertices for this model |
+| Type | Description                         |
+|------|-------------------------------------|
+| u16  | First vertex index for this model   |
+| u16  | Number of vertices for this model   |
+| i16  | Axis aligned bounding box minimum X |
+| i16  | Axis aligned bounding box maximum X |
+| i16  | Axis aligned bounding box minimum Y |
+| i16  | Axis aligned bounding box maximum Y |
 
 ## VertexPSX
 | Type | Description             |
