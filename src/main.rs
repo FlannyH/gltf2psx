@@ -7,11 +7,15 @@ use std::{
     path::Path,
 };
 
+use exoquant::{convert_to_indexed, ditherer, optimizer};
 use helpers::validate;
 use mesh::Model;
-use psx_structs::MeshPSX;
+use psx_structs::{MeshPSX, TextureCollectionPSX};
 
-use crate::psx_structs::{MeshDesc, ModelPSX, VertexPSX};
+use crate::{
+    psx_structs::{MeshDesc, ModelPSX, TextureCellPSX, VertexPSX},
+    texture::Material,
+};
 
 mod helpers;
 mod mesh;
@@ -29,7 +33,7 @@ fn main() {
 
     // If it's a glTF, load it and export a .msh file
     if path_in.ends_with(".gltf") {
-        let path_out = path_in.replace(".gltf", "") + ".msh";
+        let path_out = path_in.replace(".gltf", "");
         export_msh(path_in, path_out);
         return;
     }
@@ -47,24 +51,83 @@ fn export_msh(path_in: String, path_out: String) {
 
     // Prepare PSX output model
     let mut model_psx_out = ModelPSX::new();
+    let mut txc_psx_out = TextureCollectionPSX::new();
 
     // Loop over each submesh in the model
     for (texture_id, (material_name, mesh)) in model.meshes.into_iter().enumerate() {
         // Create PSX mesh for this submesh
-        println!("Creating mesh for '{material_name}'");
-        let mut mesh_psx = MeshPSX { verts: Vec::new() };
+        {
+            println!("Creating mesh for '{material_name}'");
+            let mut mesh_psx = MeshPSX { verts: Vec::new() };
 
-        // Convert each vertex to a PSX vertex
-        for vertex in mesh.verts {
-            mesh_psx
-                .verts
-                .push(VertexPSX::from(&vertex, texture_id as u8));
+            // Convert each vertex to a PSX vertex
+            for vertex in mesh.verts {
+                mesh_psx
+                    .verts
+                    .push(VertexPSX::from(&vertex, texture_id as u8));
+            }
+
+            // Then add this submesh to the array
+            model_psx_out.meshes.push(mesh_psx);
         }
 
-        // Then add this submesh to the array
-        model_psx_out.meshes.push(mesh_psx);
+        // Create PSX texture collection for this submesh
+        {
+            // Retrieve material corresponding to this submesh
+            let mat: &Material = &model.materials[&material_name];
+
+            // Create texture cell object
+            let mut tex_cell = TextureCellPSX {
+                texture_data: Vec::new(),
+                palette: Vec::new(),
+                texture_width: mat.texture.width as u8,
+                texture_height: mat.texture.height as u8,
+            };
+
+            // Quantize it to 16 colours
+            let mut tex_data_exoquant = Vec::new();
+            let tex_data_src = &mat.texture.data;
+            for pixel in tex_data_src {
+                let pixel8 = pixel.to_be_bytes();
+                tex_data_exoquant.push(exoquant::Color::new(
+                    pixel8[0], pixel8[1], pixel8[2], pixel8[3],
+                ));
+            }
+            let (palette, indexed_data) = convert_to_indexed(
+                &tex_data_exoquant,
+                mat.texture.width,
+                16,
+                &optimizer::KMeans,
+                &ditherer::Ordered,
+            );
+            for color in palette {
+                let color: u16 = (color.a as u16).clamp(0, 1) << 15
+                    | (color.b as u16).clamp(0, 31) << 10
+                    | (color.g as u16).clamp(0, 31) << 5
+                    | (color.r as u16).clamp(0, 31) << 0;
+                tex_cell.palette.push(color);
+            }
+
+            // Convert indices to 4 bit
+            println!("{:?}", indexed_data.len());
+            for i in (0..(mat.texture.width * mat.texture.height)).step_by(2) {
+                if (i + 1) < indexed_data.len() {
+                    tex_cell
+                        .texture_data
+                        .push(indexed_data[i + 0] << 4 | indexed_data[i + 1]);
+                } else {
+                    tex_cell.texture_data.push(0)
+                }
+            }
+
+            // Add this cell to the collection
+            txc_psx_out.texture_cells.push(tex_cell);
+            txc_psx_out.texture_names.push(material_name);
+        }
     }
-    validate(model_psx_out.save(Path::new(&path_out)));
+
+    validate(model_psx_out.save(Path::new(&(path_out.clone() + ".msh"))));
+    validate(txc_psx_out.save(Path::new(&(path_out + ".txc"))));
 }
 
 fn debug_msh(path_in: String) -> bool {

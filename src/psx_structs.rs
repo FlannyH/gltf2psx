@@ -35,6 +35,18 @@ pub struct MeshDesc {
     pub z_max: i16,
 }
 
+pub struct TextureCollectionPSX {
+    pub texture_cells: Vec<TextureCellPSX>,
+    pub texture_names: Vec<String>,
+}
+
+pub struct TextureCellPSX {
+    pub texture_data: Vec<u8>,
+    pub palette: Vec<u16>,
+    pub texture_width: u8,
+    pub texture_height: u8,
+}
+
 impl VertexPSX {
     pub fn from(vertex: &Vertex, texture_id: u8) -> VertexPSX {
         VertexPSX {
@@ -161,5 +173,85 @@ impl MeshDesc {
     pub fn from_bytes(buffer: &[u8]) -> Self {
         let mesh_desc = unsafe { &*(buffer.as_ptr() as *const MeshDesc) };
         *mesh_desc
+    }
+}
+
+impl TextureCollectionPSX {
+    pub fn new() -> Self {
+        TextureCollectionPSX {
+            texture_cells: Vec::new(),
+            texture_names: Vec::new(),
+        }
+    }
+
+    pub fn save(&self, path: &Path) -> std::io::Result<usize> {
+        // Open output file
+        let mut file = File::create(path)?;
+
+        // Write file magic
+        validate(file.write("FMSH".as_bytes()));
+
+        // Write number of texture cells and palettes
+        validate(file.write(&(self.texture_cells.len() as u16).to_le_bytes()));
+
+        // Create binary data buffers for each part
+        let mut bin_texture_cell_descs: Vec<u8> = Vec::new();
+        let mut bin_palettes: Vec<u8> = Vec::new();
+        let mut bin_texture_data: Vec<u8> = Vec::new();
+
+        // Populate these buffers
+        for i in 0..self.texture_cells.len() {
+            // Palettes
+            {
+                let palette = &self.texture_cells[i].palette;
+                for color in palette {
+                    bin_palettes.push(((color >> 8) & 0xFF) as u8);
+                    bin_palettes.push(((color >> 0) & 0xFF) as u8);
+                }
+            }
+
+            // Texture data
+            {
+                let new_offset = bin_texture_data.len() as u32;
+
+                // Write texture offset
+                bin_texture_cell_descs.extend_from_slice(&new_offset.to_le_bytes());
+
+                // Write palette index
+                bin_texture_cell_descs.extend_from_slice(&(i as u16).to_le_bytes());
+
+                // Write texture dimensions
+                bin_texture_cell_descs.push(self.texture_cells[i].texture_width);
+                bin_texture_cell_descs.push(self.texture_cells[i].texture_height);
+
+                // Get offset in texture data array to this texture
+                bin_texture_data.extend(&self.texture_cells[i].texture_data);
+            }
+        }
+
+        // I guess we can just write these in any order at this point, since the offsets will be stored in the main header
+        let mut cursor: u32 = 0;
+
+        // Write offset to texture cell descs
+        validate(file.write(&(cursor).to_le_bytes()));
+        cursor += bin_texture_cell_descs.len() as u32;
+
+        // Write offset to textures
+        validate(file.write(&(cursor).to_le_bytes()));
+        cursor += bin_texture_data.len() as u32;
+
+        // Write offset to palettes
+        validate(file.write(&(cursor).to_le_bytes()));
+        //cursor += bin_palettes.len() as u32;
+
+        // todo: name table
+        validate(file.write(&(0u32).to_le_bytes()));
+
+        // Write the raw buffers now, in the right order
+        validate(file.write(bin_texture_cell_descs.as_slice()));
+        validate(file.write(bin_texture_data.as_slice()));
+        validate(file.write(bin_palettes.as_slice()));
+
+        Ok(0)
     }
 }

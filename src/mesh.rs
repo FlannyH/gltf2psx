@@ -15,7 +15,8 @@ pub struct Mesh {
 }
 
 pub struct Model {
-    pub meshes: HashMap<String, Mesh>, // Where the u32 is the material id
+    pub meshes: HashMap<String, Mesh>, // Where the String is the material id
+    pub materials: HashMap<String, Material>, // Where the String is the material id
 }
 
 // So what this function needs to do: &[u8] -(reinterpret)> &[SrcCompType] -(convert)> &[DstCompType]
@@ -343,6 +344,12 @@ impl Model {
                     texture: tex,
                     sampler: new_sampler,
                 };
+                println!(
+                    "Found texture '{}' ({}x{})",
+                    material.name().unwrap_or(""),
+                    _new_material.texture.width,
+                    _new_material.texture.height
+                )
             }
             // If there is no base texture, generate a white one
             else {
@@ -364,12 +371,18 @@ impl Model {
                     },
                 };
             }
+
+            self.materials.insert(
+                String::from(material.name().unwrap_or("untitled")),
+                _new_material,
+            );
         }
     }
 
     pub(crate) fn new() -> Model {
         Model {
             meshes: HashMap::new(),
+            materials: HashMap::new(),
         }
     }
 }

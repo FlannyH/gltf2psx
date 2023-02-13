@@ -204,8 +204,8 @@ impl Texture {
                 PixelComp::Skip,
                 PixelComp::Alpha,
             ],
-            gltf::image::Format::R32G32B32FLOAT => todo!(),
-            gltf::image::Format::R32G32B32A32FLOAT => todo!(),
+            gltf::image::Format::R32G32B32FLOAT => unimplemented!(),
+            gltf::image::Format::R32G32B32A32FLOAT => unimplemented!(),
         };
         Texture {
             width: image.width as usize,
