@@ -28,3 +28,9 @@ fn point_inside_triangle(v0: Vec2, v1: Vec2, v2: Vec2, p: Vec2) -> bool {
         && (edge_function(v1, v2, p) > 0.0)
         && (edge_function(v2, v0, p) > 0.0)
 }
+
+pub fn validate(r: std::io::Result<usize>) {
+    if r.is_err() {
+        panic!();
+    }
+}

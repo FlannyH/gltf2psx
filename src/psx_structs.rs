@@ -1,6 +1,6 @@
 use std::{fs::File, io::Write, path::Path};
 
-use crate::structs::Vertex;
+use crate::{helpers::validate, structs::Vertex};
 
 #[derive(Clone, Copy)]
 pub struct VertexPSX {
@@ -26,13 +26,13 @@ pub struct ModelPSX {
 #[derive(Clone, Copy)]
 pub struct MeshDesc {
     pub vertex_start: u16,
-    pub n_vertices  : u16,
-    pub x_min       : i16,
-    pub x_max       : i16,
-    pub y_min       : i16,
-    pub y_max       : i16,
-    pub z_min       : i16,
-    pub z_max       : i16,
+    pub n_vertices: u16,
+    pub x_min: i16,
+    pub x_max: i16,
+    pub y_min: i16,
+    pub y_max: i16,
+    pub z_min: i16,
+    pub z_max: i16,
 }
 
 impl VertexPSX {
@@ -76,7 +76,7 @@ impl ModelPSX {
         ModelPSX { meshes: Vec::new() }
     }
 
-    pub fn save(&self, path: &Path) -> std::io::Result<()> {
+    pub fn save(&self, path: &Path) -> std::io::Result<usize> {
         // Create binary array of data
         let mut raw_vertex_data = Vec::<VertexPSX>::new();
         let mut mesh_descs = Vec::<MeshDesc>::new();
@@ -84,12 +84,12 @@ impl ModelPSX {
         // For each submesh, add the vertices to the array, and store 32-bit offsets to the start of each of them
         for mesh in self.meshes.as_slice() {
             // Find AABB extremes
-            let mut x_max= -32768;
-            let mut x_min= 32767;
-            let mut y_max= -32768;
-            let mut y_min= 32767;
-            let mut z_max= -32768;
-            let mut z_min= 32767;
+            let mut x_max = -32768;
+            let mut x_min = 32767;
+            let mut y_max = -32768;
+            let mut y_min = 32767;
+            let mut z_max = -32768;
+            let mut z_min = 32767;
             for vertex in &mesh.verts {
                 x_max = x_max.max(vertex.pos_x);
                 x_min = x_min.min(vertex.pos_x);
@@ -99,12 +99,15 @@ impl ModelPSX {
                 z_min = z_min.min(vertex.pos_z);
             }
 
-            mesh_descs.push(MeshDesc{
+            mesh_descs.push(MeshDesc {
                 vertex_start: raw_vertex_data.len() as u16,
                 n_vertices: mesh.verts.len() as u16,
-                x_min, x_max,
-                y_min, y_max,
-                z_min, z_max,
+                x_min,
+                x_max,
+                y_min,
+                y_max,
+                z_min,
+                z_max,
             });
             for vertex in &mesh.verts {
                 raw_vertex_data.push(*vertex);
@@ -115,42 +118,42 @@ impl ModelPSX {
         let mut file = File::create(path)?;
 
         // Write file magic
-        file.write("FMSH".as_bytes());
+        validate(file.write("FMSH".as_bytes()));
 
         // Write number of submeshes
-        file.write(&(self.meshes.len() as u32).to_le_bytes());
+        validate(file.write(&(self.meshes.len() as u32).to_le_bytes()));
 
         // The offset into the MeshDesc array is zero here
         // Let's just define it to always be this way
-        file.write(&(0u32).to_le_bytes());
+        validate(file.write(&(0u32).to_le_bytes()));
 
         // The vertex data is stored right after the MeshDesc array, but it's aligned to 4 bytes so the PS1 doesn't crap all over itself trying to load it
         let vertex_data_offset = (mesh_descs.len() * 16 + 0x03) & !0x03;
         let delta_offset = vertex_data_offset - mesh_descs.len() * 16;
 
         // Write the offset to the vertex data
-        file.write(&(vertex_data_offset as u32).to_le_bytes());
+        validate(file.write(&(vertex_data_offset as u32).to_le_bytes()));
 
         for value in mesh_descs {
-            file.write(&value.vertex_start.to_le_bytes());
-            file.write(&value.n_vertices.to_le_bytes());
-            file.write(&value.x_min.to_le_bytes());
-            file.write(&value.x_max.to_le_bytes());
-            file.write(&value.y_min.to_le_bytes());
-            file.write(&value.y_max.to_le_bytes());
-            file.write(&value.z_min.to_le_bytes());
-            file.write(&value.z_max.to_le_bytes());
+            validate(file.write(&value.vertex_start.to_le_bytes()));
+            validate(file.write(&value.n_vertices.to_le_bytes()));
+            validate(file.write(&value.x_min.to_le_bytes()));
+            validate(file.write(&value.x_max.to_le_bytes()));
+            validate(file.write(&value.y_min.to_le_bytes()));
+            validate(file.write(&value.y_max.to_le_bytes()));
+            validate(file.write(&value.z_min.to_le_bytes()));
+            validate(file.write(&value.z_max.to_le_bytes()));
         }
 
         for _ in 0..delta_offset {
-            file.write(&[0x69]);
+            validate(file.write(&[0x69]));
         }
 
         for vertex in raw_vertex_data {
-            file.write(&vertex.get_bytes());
+            validate(file.write(&vertex.get_bytes()));
         }
 
-        Ok(())
+        Ok(0)
     }
 }
 

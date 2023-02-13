@@ -270,7 +270,8 @@ impl Model {
 
         // Get all the textures from the GLTF
         for material in gltf_document.materials() {
-            let new_material;
+            let _new_material; // this is unused for now
+
             // Get the base texture info
             let gltf_tex_info = material.pbr_metallic_roughness().base_color_texture();
 
@@ -338,14 +339,14 @@ impl Model {
                     },
                 };
 
-                new_material = Material {
+                _new_material = Material {
                     texture: tex,
                     sampler: new_sampler,
                 };
             }
             // If there is no base texture, generate a white one
             else {
-                new_material = Material {
+                _new_material = Material {
                     texture: Texture {
                         width: 1,
                         height: 1,
