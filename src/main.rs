@@ -256,9 +256,7 @@ fn debug_txc(path_in: String) -> bool {
 
     // Validate offsets
     let binary_offset = 24;
-    let start_binary_section = file
-        .seek(std::io::SeekFrom::Start(binary_offset as u64))
-        .unwrap();
+    let start_binary_section = file.seek(std::io::SeekFrom::Start(binary_offset)).unwrap();
     let end_binary_section = file.seek(std::io::SeekFrom::End(0)).unwrap();
     let number_of_bytes = end_binary_section.overflowing_sub(start_binary_section).0;
     if offset_texture_cell_descs as u64 > number_of_bytes

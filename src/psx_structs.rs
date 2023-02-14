@@ -223,16 +223,6 @@ impl TextureCollectionPSX {
             {
                 let new_offset = (bin_texture_data.len() / 2048) as u8;
 
-                // Write texture offset
-                bin_texture_cell_descs.extend_from_slice(&new_offset.to_le_bytes());
-
-                // Write palette index
-                bin_texture_cell_descs.extend_from_slice(&(i as u8).to_le_bytes());
-
-                // Write texture dimensions
-                bin_texture_cell_descs.push(cell.texture_width);
-                bin_texture_cell_descs.push(cell.texture_height);
-
                 // Add texture to the texture binary
                 // It's aligned in such a way that >=64x64 textures are aligned to CD sectors,
                 // and anything lower will align to a subdivision of the CD sector
@@ -251,6 +241,16 @@ impl TextureCollectionPSX {
 
                 // Add the texture data to the binary array
                 bin_texture_data.extend(&cell.texture_data);
+
+                // Write texture offset
+                bin_texture_cell_descs.push(((curr_position + n_bytes_to_add) / 2048) as u8);
+
+                // Write palette index
+                bin_texture_cell_descs.extend_from_slice(&(i as u8).to_le_bytes());
+
+                // Write texture dimensions
+                bin_texture_cell_descs.push(cell.texture_width);
+                bin_texture_cell_descs.push(cell.texture_height);
             }
         }
 
