@@ -276,7 +276,7 @@ impl Model {
             // Get the base texture info
             let gltf_tex_info = material.pbr_metallic_roughness().base_color_texture();
 
-            let mut tex;
+            let tex;
             // If there is a base texture, load it
             if let Some(gltf_tex_info_unwrapped) = gltf_tex_info {
                 // Get image index
@@ -355,10 +355,10 @@ impl Model {
             else {
                 _new_material = Material {
                     texture: Texture {
-                        width: 1,
-                        height: 1,
+                        width: 64,
+                        height: 64,
                         depth: 1,
-                        data: vec![0xFFFFFFFFu32; 1],
+                        data: vec![0xFFFFFFFFu32; 64 * 64],
                         mipmap_offsets: vec![0usize; 1],
                     },
                     sampler: Sampler {
