@@ -59,7 +59,7 @@ impl VertexPSX {
     pub fn from(vertex: &Vertex, texture_id: u8) -> VertexPSX {
         VertexPSX {
             pos_x: (256.0 * vertex.position.x).clamp(-32768.0, 32767.0) as i16,
-            pos_y: (256.0 * vertex.position.y).clamp(-32768.0, 32767.0) as i16,
+            pos_y: (-256.0 * vertex.position.y).clamp(-32768.0, 32767.0) as i16,
             pos_z: (256.0 * vertex.position.z).clamp(-32768.0, 32767.0) as i16,
             color_r: (255.0 * vertex.colour.x).clamp(0.0, 255.0) as u8,
             color_g: (255.0 * vertex.colour.y).clamp(0.0, 255.0) as u8,
@@ -214,15 +214,13 @@ impl TextureCollectionPSX {
             {
                 let palette = &cell.palette;
                 for color in palette {
-                    bin_palettes.push(((color >> 8) & 0xFF) as u8);
                     bin_palettes.push(((color >> 0) & 0xFF) as u8);
+                    bin_palettes.push(((color >> 8) & 0xFF) as u8);
                 }
             }
 
             // Texture data
             {
-                let new_offset = (bin_texture_data.len() / 2048) as u8;
-
                 // Add texture to the texture binary
                 // It's aligned in such a way that >=64x64 textures are aligned to CD sectors,
                 // and anything lower will align to a subdivision of the CD sector
@@ -266,7 +264,9 @@ impl TextureCollectionPSX {
         cursor += bin_palettes.len() as u32;
 
         // Align the texture data to a CD sector. This allows for some neat optimizations
-        cursor = (cursor + 2047) & !2047;
+        let real_cursor = cursor + 24;
+        let bytes_to_pad = ((real_cursor + 2047) & !2047) - real_cursor;
+        cursor += bytes_to_pad;
 
         // Write offset to textures
         validate(file.write(&(cursor).to_le_bytes()));
@@ -278,6 +278,12 @@ impl TextureCollectionPSX {
         // Write the raw buffers now, in the right order
         validate(file.write(bin_texture_cell_descs.as_slice()));
         validate(file.write(bin_palettes.as_slice()));
+
+        // Pad with zeroes
+        for _ in 0..bytes_to_pad {
+            validate(file.write(&[0u8]));
+        }
+
         validate(file.write(bin_texture_data.as_slice()));
 
         Ok(0)

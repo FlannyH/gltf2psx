@@ -96,7 +96,7 @@ fn export_msh(path_in: String, path_out: String) {
             for pixel in tex_data_src {
                 let pixel8 = pixel.to_be_bytes();
                 tex_data_exoquant.push(exoquant::Color::new(
-                    pixel8[0], pixel8[1], pixel8[2], pixel8[3],
+                    pixel8[3], pixel8[2], pixel8[1], pixel8[0],
                 ));
             }
             let (palette, indexed_data) = convert_to_indexed(
@@ -107,10 +107,11 @@ fn export_msh(path_in: String, path_out: String) {
                 &ditherer::Ordered,
             );
             for color in palette {
+                println!("color2: {},{},{},{}", color.r, color.g, color.b, color.a);
                 let color: u16 = (color.a as u16).clamp(0, 1) << 15
-                    | (color.b as u16).clamp(0, 31) << 10
-                    | (color.g as u16).clamp(0, 31) << 5
-                    | (color.r as u16).clamp(0, 31) << 0;
+                    | (color.b as u16 >> 3).clamp(0, 31) << 10
+                    | (color.g as u16 >> 3).clamp(0, 31) << 5
+                    | (color.r as u16 >> 3).clamp(0, 31) << 0;
                 tex_cell.palette.push(color);
             }
 
@@ -120,7 +121,7 @@ fn export_msh(path_in: String, path_out: String) {
                 if (i + 1) < indexed_data.len() {
                     tex_cell
                         .texture_data
-                        .push(indexed_data[i + 0] << 4 | indexed_data[i + 1]);
+                        .push((indexed_data[i + 0] << 4) | (indexed_data[i + 1]));
                 } else {
                     tex_cell.texture_data.push(0)
                 }
@@ -242,9 +243,9 @@ fn debug_txc(path_in: String) -> bool {
     validate(file.read(&mut buf32));
     let offset_texture_cell_descs = u32::from_le_bytes(buf32);
     validate(file.read(&mut buf32));
-    let offset_textures = u32::from_le_bytes(buf32);
-    validate(file.read(&mut buf32));
     let offset_palettes = u32::from_le_bytes(buf32);
+    validate(file.read(&mut buf32));
+    let offset_textures = u32::from_le_bytes(buf32);
     validate(file.read(&mut buf32));
     let offset_name_table = u32::from_le_bytes(buf32);
 

@@ -288,7 +288,7 @@ impl Model {
                 // Load the texture from that image data
                 tex = Texture::load_texture_from_gltf_image(image);
                 // Generate mipmaps
-                tex.generate_mipmaps();
+                //tex.generate_mipmaps();
 
                 // Get sampler mode
                 let gltf_sampler = gltf_tex_info_unwrapped.texture().sampler();
