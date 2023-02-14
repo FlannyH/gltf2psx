@@ -47,6 +47,14 @@ pub struct TextureCellPSX {
     pub texture_height: u8,
 }
 
+#[derive(Clone, Copy)]
+pub struct TextureCellBinary {
+    pub sector_offset_texture: u8,
+    pub palette_index: u8,
+    pub texture_width: u8,
+    pub texture_height: u8,
+}
+
 impl VertexPSX {
     pub fn from(vertex: &Vertex, texture_id: u8) -> VertexPSX {
         VertexPSX {
@@ -171,8 +179,8 @@ impl ModelPSX {
 
 impl MeshDesc {
     pub fn from_bytes(buffer: &[u8]) -> Self {
-        let mesh_desc = unsafe { &*(buffer.as_ptr() as *const MeshDesc) };
-        *mesh_desc
+        let a = unsafe { &*(buffer.as_ptr() as *const MeshDesc) };
+        *a
     }
 }
 
@@ -189,10 +197,10 @@ impl TextureCollectionPSX {
         let mut file = File::create(path)?;
 
         // Write file magic
-        validate(file.write("FMSH".as_bytes()));
+        validate(file.write("FTXC".as_bytes()));
 
         // Write number of texture cells and palettes
-        validate(file.write(&(self.texture_cells.len() as u16).to_le_bytes()));
+        validate(file.write(&(self.texture_cells.len() as u32).to_le_bytes()));
 
         // Create binary data buffers for each part
         let mut bin_texture_cell_descs: Vec<u8> = Vec::new();
@@ -201,9 +209,10 @@ impl TextureCollectionPSX {
 
         // Populate these buffers
         for i in 0..self.texture_cells.len() {
+            let cell = &self.texture_cells[i];
             // Palettes
             {
-                let palette = &self.texture_cells[i].palette;
+                let palette = &cell.palette;
                 for color in palette {
                     bin_palettes.push(((color >> 8) & 0xFF) as u8);
                     bin_palettes.push(((color >> 0) & 0xFF) as u8);
@@ -212,20 +221,36 @@ impl TextureCollectionPSX {
 
             // Texture data
             {
-                let new_offset = bin_texture_data.len() as u32;
+                let new_offset = (bin_texture_data.len() / 2048) as u8;
 
                 // Write texture offset
                 bin_texture_cell_descs.extend_from_slice(&new_offset.to_le_bytes());
 
                 // Write palette index
-                bin_texture_cell_descs.extend_from_slice(&(i as u16).to_le_bytes());
+                bin_texture_cell_descs.extend_from_slice(&(i as u8).to_le_bytes());
 
                 // Write texture dimensions
-                bin_texture_cell_descs.push(self.texture_cells[i].texture_width);
-                bin_texture_cell_descs.push(self.texture_cells[i].texture_height);
+                bin_texture_cell_descs.push(cell.texture_width);
+                bin_texture_cell_descs.push(cell.texture_height);
 
-                // Get offset in texture data array to this texture
-                bin_texture_data.extend(&self.texture_cells[i].texture_data);
+                // Add texture to the texture binary
+                // It's aligned in such a way that >=64x64 textures are aligned to CD sectors,
+                // and anything lower will align to a subdivision of the CD sector
+                let grid_align = 2048;
+
+                // Determine the number of bytes to add to align the texture data
+                let curr_position = bin_texture_data.len() as u32;
+                let n_bytes_to_add =
+                    ((curr_position + (grid_align - 1)) & !(grid_align - 1)) - curr_position;
+
+                println!("curr_position: {curr_position}");
+                println!("n_bytes_to_add: {n_bytes_to_add}");
+
+                // Pad to this align
+                bin_texture_data.resize(bin_texture_data.len() + n_bytes_to_add as usize, 0);
+
+                // Add the texture data to the binary array
+                bin_texture_data.extend(&cell.texture_data);
             }
         }
 
@@ -236,22 +261,32 @@ impl TextureCollectionPSX {
         validate(file.write(&(cursor).to_le_bytes()));
         cursor += bin_texture_cell_descs.len() as u32;
 
-        // Write offset to textures
-        validate(file.write(&(cursor).to_le_bytes()));
-        cursor += bin_texture_data.len() as u32;
-
         // Write offset to palettes
         validate(file.write(&(cursor).to_le_bytes()));
-        //cursor += bin_palettes.len() as u32;
+        cursor += bin_palettes.len() as u32;
+
+        // Align the texture data to a CD sector. This allows for some neat optimizations
+        cursor = (cursor + 2047) & !2047;
+
+        // Write offset to textures
+        validate(file.write(&(cursor).to_le_bytes()));
+        //cursor += bin_texture_data.len() as u32;
 
         // todo: name table
         validate(file.write(&(0u32).to_le_bytes()));
 
         // Write the raw buffers now, in the right order
         validate(file.write(bin_texture_cell_descs.as_slice()));
-        validate(file.write(bin_texture_data.as_slice()));
         validate(file.write(bin_palettes.as_slice()));
+        validate(file.write(bin_texture_data.as_slice()));
 
         Ok(0)
+    }
+}
+
+impl TextureCellBinary {
+    pub fn from_bytes(buffer: &[u8]) -> Self {
+        let a = unsafe { &*(buffer.as_ptr() as *const Self) };
+        *a
     }
 }
