@@ -7,6 +7,7 @@ pub struct Texture {
     pub depth: usize,
     pub data: Vec<u32>,
     pub mipmap_offsets: Vec<usize>,
+    pub avg_color: u32,
 }
 
 #[derive(PartialEq)]
@@ -62,13 +63,16 @@ impl Texture {
                         )
                     })
                     .collect();
-                Self {
+                let mut result = Self {
                     width: image.width,
                     height: image.height,
                     depth: image.depth,
                     data,
                     mipmap_offsets: vec![0; 1],
-                }
+                    avg_color: 0xFFFFFFFFu32,
+                };
+                result.calculate_avg_color();
+                result
             } else if image.depth == 3 {
                 let data = (0..image.data.len() / 3)
                     .map(|id| {
@@ -80,13 +84,16 @@ impl Texture {
                         )
                     })
                     .collect();
-                Self {
+                let mut result = Self {
                     width: image.width,
                     height: image.height,
                     depth: image.depth,
                     data,
                     mipmap_offsets: vec![0; 1],
-                }
+                    avg_color: 0xFFFFFFFFu32,
+                };
+                result.calculate_avg_color();
+                result
             } else {
                 panic!("Unsupported texture type");
             }
@@ -207,7 +214,7 @@ impl Texture {
             gltf::image::Format::R32G32B32FLOAT => unimplemented!(),
             gltf::image::Format::R32G32B32A32FLOAT => unimplemented!(),
         };
-        Texture {
+        let mut result = Texture {
             width: image.width as usize,
             height: image.height as usize,
             depth: 4,
@@ -240,7 +247,10 @@ impl Texture {
                 data
             },
             mipmap_offsets: vec![0; 1],
-        }
+            avg_color: 0,
+        };
+        result.calculate_avg_color();
+        result
     }
 
     pub fn generate_mipmaps(&mut self) {
@@ -298,6 +308,30 @@ impl Texture {
             src_offset = new_mipmap_offset;
             i += 1;
         }
+    }
+
+    fn calculate_avg_color(&mut self) {
+        let mut avg_r = 0;
+        let mut avg_g = 0;
+        let mut avg_b = 0;
+        let mut div = 0;
+        self.avg_color = {
+            for pixel in &self.data {
+                // Convert color to bytes
+                let bytes = pixel.to_le_bytes();
+                // Convert bytes to floats
+                avg_r += bytes[0] as u32;
+                avg_g += bytes[1] as u32;
+                avg_b += bytes[2] as u32;
+                div += 1;
+            }
+            avg_r = (avg_r / div).clamp(0, 255);
+            avg_g = (avg_g / div).clamp(0, 255);
+            avg_b = (avg_b / div).clamp(0, 255);
+
+            (avg_r << 0) | (avg_g << 8) | (avg_b << 16) | (0xFF << 24)
+        };
+        println!("calculate avg_color: {:x}", self.avg_color);
     }
 }
 

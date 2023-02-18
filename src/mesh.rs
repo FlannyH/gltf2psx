@@ -360,6 +360,7 @@ impl Model {
                         depth: 1,
                         data: vec![0xFFFFFFFFu32; 64 * 64],
                         mipmap_offsets: vec![0usize; 1],
+                        avg_color: 0xFFFFFFFFu32,
                     },
                     sampler: Sampler {
                         filter_mode_mag: FilterMode::Point,

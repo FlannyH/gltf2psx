@@ -45,6 +45,7 @@ pub struct TextureCellPSX {
     pub palette: Vec<u16>,
     pub texture_width: u8,
     pub texture_height: u8,
+    pub avg_color: u32,
 }
 
 #[derive(Clone, Copy)]
@@ -249,6 +250,9 @@ impl TextureCollectionPSX {
                 // Write texture dimensions
                 bin_texture_cell_descs.push(cell.texture_width);
                 bin_texture_cell_descs.push(cell.texture_height);
+
+                // Write texture dimensions
+                bin_texture_cell_descs.extend_from_slice(&cell.avg_color.to_le_bytes());
             }
         }
 

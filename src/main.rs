@@ -88,6 +88,7 @@ fn export_msh(path_in: String, path_out: String) {
                 palette: Vec::new(),
                 texture_width: mat.texture.width as u8,
                 texture_height: mat.texture.height as u8,
+                avg_color: 0,
             };
 
             // Quantize it to 16 colours
@@ -107,7 +108,6 @@ fn export_msh(path_in: String, path_out: String) {
                 &ditherer::Ordered,
             );
             for color in palette {
-                println!("color2: {},{},{},{}", color.r, color.g, color.b, color.a);
                 let color: u16 = (color.a as u16).clamp(0, 1) << 15
                     | (color.b as u16 >> 3).clamp(0, 31) << 10
                     | (color.g as u16 >> 3).clamp(0, 31) << 5
@@ -126,6 +126,9 @@ fn export_msh(path_in: String, path_out: String) {
                     tex_cell.texture_data.push(0)
                 }
             }
+
+            // Set average color in cell
+            tex_cell.avg_color = mat.texture.avg_color;
 
             // Add this cell to the collection
             txc_psx_out.texture_cells.push(tex_cell);
