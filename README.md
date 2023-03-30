@@ -4,4 +4,4 @@ This is a tool I wrote for converting a model from glTF format to a custom forma
 ## File specifications
 [Model PSX](./doc/model_psx.md) - The `.msh` file that this tool creates.
 
-[Texture Atlas Pages PSX](./doc/texture_psx.md) - The `.tap` file that this tool creates
+[Texture Collectiohn PSX](./doc/texture_psx.md) - The `.txc` file that this tool creates

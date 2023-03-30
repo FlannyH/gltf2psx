@@ -17,7 +17,7 @@ All offsets are relative to the start of this binary section.
 ## TextureCellDesc
 | Type | Name                  | Description                           |
 | ---- | --------------------- | ------------------------------------- |
-| u8   | sector_offset_texture | Offset into raw texture data section. |
+| u8   | sector_offset_texture | Offset (in bytes*2048) into raw texture data section. |
 | u8   | palette_index         | Palette index.                        |
 | u8   | texture_width         | Texture width in pixels.              |
 | u8   | texture_height        | Texture height in pixels.             |
