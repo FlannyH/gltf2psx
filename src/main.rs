@@ -7,7 +7,7 @@ use std::{
     path::Path,
 };
 
-use exoquant::{convert_to_indexed, ditherer, optimizer};
+use exoquant::{convert_to_indexed, ditherer, optimizer, Color, Colorf};
 use helpers::validate;
 use mesh::Model;
 use psx_structs::{MeshPSX, TextureCollectionPSX};
@@ -107,12 +107,35 @@ fn export_msh(path_in: String, path_out: String) {
                 &optimizer::KMeans,
                 &ditherer::Ordered,
             );
-            for color in palette {
-                let color: u16 = (color.a as u16).clamp(0, 1) << 15
-                    | (color.b as u16 >> 3).clamp(0, 31) << 10
-                    | (color.g as u16 >> 3).clamp(0, 31) << 5
-                    | (color.r as u16 >> 3).clamp(0, 31) << 0;
-                tex_cell.palette.push(color);
+            let color_b = Color {
+                r: (mat.texture.avg_color & 0x000000FF >> 0) as u8,
+                g: (mat.texture.avg_color & 0x0000FF00 >> 8) as u8,
+                b: (mat.texture.avg_color & 0x00FF0000 >> 16) as u8,
+                a: (mat.texture.avg_color & 0xFF000000 >> 24) as u8,
+            };
+            for fade_level in 0..16 {
+                for color in &palette {
+                    let color: u16 = (color.a as u16).clamp(0, 1) << 15
+                        | ((((fade_level * color_b.b as u16)
+                            + ((15 - fade_level) * color.b as u16))
+                            / 15)
+                            >> 3)
+                            .clamp(0, 31)
+                            << 10
+                        | ((((fade_level * color_b.g as u16)
+                            + ((15 - fade_level) * color.g as u16))
+                            / 15)
+                            >> 3)
+                            .clamp(0, 31)
+                            << 5
+                        | ((((fade_level * color_b.r as u16)
+                            + ((15 - fade_level) * color.r as u16))
+                            / 15)
+                            >> 3)
+                            .clamp(0, 31)
+                            << 0;
+                    tex_cell.palette.push(color);
+                }
             }
 
             // Convert indices to 4 bit
