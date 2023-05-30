@@ -7,7 +7,7 @@ use std::{
     path::Path,
 };
 
-use exoquant::{convert_to_indexed, ditherer, optimizer, Color, Colorf};
+use exoquant::{convert_to_indexed, ditherer, optimizer, Color};
 use helpers::validate;
 use mesh::Model;
 use psx_structs::{MeshPSX, TextureCollectionPSX};
@@ -22,6 +22,8 @@ mod mesh;
 mod psx_structs;
 mod structs;
 mod texture;
+use image::{RgbaImage, DynamicImage, Rgba};
+const DEBUG_VIEW: bool = false;
 
 fn main() {
     // Get command line arguments and check if we have one
@@ -81,6 +83,20 @@ fn export_msh(path_in: String, path_out: String) {
         {
             // Retrieve material corresponding to this submesh
             let mat: &Material = &model.materials[&material_name];
+
+            // For debug purposes, export the textures
+            if (DEBUG_VIEW) {
+                let mut pixels = Vec::new();
+                for value in &mat.texture.data {
+                    pixels.push(((value >> 0) & 0xFF) as u8);
+                    pixels.push(((value >> 8) & 0xFF) as u8);
+                    pixels.push(((value >> 16) & 0xFF) as u8);
+                    pixels.push(((value >> 24) & 0xFF) as u8);
+                }
+                let image_data = RgbaImage::from_vec(64, 64, pixels).unwrap();
+                let output = DynamicImage::ImageRgba8(image_data);
+                output.save(format!("{material_name}.png")).unwrap();
+            }
 
             // Create texture cell object
             let mut tex_cell = TextureCellPSX {
@@ -146,7 +162,10 @@ fn export_msh(path_in: String, path_out: String) {
                         .texture_data
                         .push((indexed_data[i + 0] << 4) | (indexed_data[i + 1]));
                 } else {
-                    tex_cell.texture_data.push(0)
+                    tex_cell.texture_data.push(0);
+                    tex_cell.texture_data.push(0);
+                    tex_cell.texture_data.push(0);
+                    tex_cell.texture_data.push(0);
                 }
             }
 
@@ -277,8 +296,8 @@ fn debug_txc(path_in: String) -> bool {
 
     println!("n_texture_cell: {}", n_texture_cell);
     println!("offset_texture_cell_descs: {}", offset_texture_cell_descs);
-    println!("offset_textures: {}", offset_textures);
     println!("offset_palettes: {}", offset_palettes);
+    println!("offset_textures: {}", offset_textures);
     println!("offset_name_table: {}", offset_name_table);
 
     // Validate offsets
@@ -300,24 +319,77 @@ fn debug_txc(path_in: String) -> bool {
         // Find texture cell
         let _ = file
             .seek(std::io::SeekFrom::Start(
-                binary_offset + offset_texture_cell_descs as u64 + (i as u64 * 4),
+                binary_offset + offset_texture_cell_descs as u64 + (i as u64 * 8),
             ))
             .unwrap();
 
         // Get the data
-        let mut buf64 = [0, 0, 0, 0, 0, 0, 0, 0];
+        let mut buf64 = [0u8; 8];
         validate(file.read(&mut buf64));
         let texture_cell = TextureCellBinary::from_bytes(&buf64);
 
         // Print the data
         println!(
-            "Texture {}: offset: {}\tresolution: {}x{}, \tpalette_index: {}",
+            "Texture {}: offset: {}\tresolution: {}x{}, \tpalette_index: {},\tavg_color: {:08X}",
             i,
             texture_cell.sector_offset_texture as u32 * 2048,
             texture_cell.texture_width,
             texture_cell.texture_height,
-            texture_cell.palette_index
+            texture_cell.palette_index,
+            texture_cell.avg_color
         );
+
+        // Find the texture data
+        let _ = file
+            .seek(std::io::SeekFrom::Start(
+                binary_offset + offset_textures as u64 + (i as u64 * 2048),
+            ))
+            .unwrap();
+
+        // Read the texture data
+        let mut texture_indices_4bit = [0u8; 64*64/2];
+        validate(file.read(&mut texture_indices_4bit));
+
+        // Find the palette data
+        let _ = file
+            .seek(std::io::SeekFrom::Start(
+                binary_offset + offset_palettes as u64 + (i as u64 * 32 * 16),
+            ))
+            .unwrap();
+
+        // Read the palette data
+        let mut palette_16bit = [0u8; 32];
+        validate(file.read(&mut palette_16bit));
+
+        // Loop over each pixel
+        let mut pixels = RgbaImage::new(64, 64);
+        for y in 0..64 {
+            for x in 0..64 {
+                let mut pixel = texture_indices_4bit[(x + (y * 64)) / 2];
+
+                // Extract the 4-bit index from the byte
+                if (x % 2) == 0 {
+                    pixel = (pixel & 0xF0) >> 4;
+                } else {
+                    pixel = pixel & 0x0F;
+                }
+
+                // Look up the color in the palette
+                let color = palette_16bit[pixel as usize * 2 + 0] as u16 + ((palette_16bit[pixel as usize * 2 + 1] as u16) << 8);
+
+                // Convert to 32 bit color
+                let r = 8 * ((color >> 0) & 0x1F) as u8;
+                let g = 8 * ((color >> 5) & 0x1F) as u8;
+                let b = 8 * ((color >> 10) & 0x1F) as u8;
+                let a = 255 * ((color >> 15) & 0x01) as u8;
+
+                pixels.put_pixel(x as u32, y as u32, Rgba([r, g, b, a]));
+            }
+        }
+
+        // Export the image
+        let output = DynamicImage::ImageRgba8(pixels);
+        output.save(format!("texture{i}.png")).unwrap();
     }
 
     true

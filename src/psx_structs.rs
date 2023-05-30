@@ -48,12 +48,14 @@ pub struct TextureCellPSX {
     pub avg_color: u32,
 }
 
+#[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TextureCellBinary {
     pub sector_offset_texture: u8,
     pub palette_index: u8,
     pub texture_width: u8,
     pub texture_height: u8,
+    pub avg_color: u32,
 }
 
 impl VertexPSX {
