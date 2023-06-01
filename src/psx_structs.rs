@@ -61,9 +61,9 @@ pub struct TextureCellBinary {
 impl VertexPSX {
     pub fn from(vertex: &Vertex, texture_id: u8) -> VertexPSX {
         VertexPSX {
-            pos_x: (256.0 * vertex.position.x).clamp(-32768.0, 32767.0) as i16,
-            pos_y: (-256.0 * vertex.position.y).clamp(-32768.0, 32767.0) as i16,
-            pos_z: (256.0 * vertex.position.z).clamp(-32768.0, 32767.0) as i16,
+            pos_x: (-512.0 * vertex.position.x).clamp(-32768.0, 32767.0) as i16,
+            pos_y: (-512.0 * vertex.position.y).clamp(-32768.0, 32767.0) as i16,
+            pos_z: (512.0 * vertex.position.z).clamp(-32768.0, 32767.0) as i16,
             color_r: (255.0 * vertex.colour.x).clamp(0.0, 255.0) as u8,
             color_g: (255.0 * vertex.colour.y).clamp(0.0, 255.0) as u8,
             color_b: (255.0 * vertex.colour.z).clamp(0.0, 255.0) as u8,

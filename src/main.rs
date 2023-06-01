@@ -85,7 +85,7 @@ fn export_msh(path_in: String, path_out: String) {
             let mat: &Material = &model.materials[&material_name];
 
             // For debug purposes, export the textures
-            if (DEBUG_VIEW) {
+            if DEBUG_VIEW {
                 let mut pixels = Vec::new();
                 for value in &mat.texture.data {
                     pixels.push(((value >> 0) & 0xFF) as u8);
