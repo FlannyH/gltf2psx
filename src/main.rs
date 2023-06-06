@@ -4,10 +4,11 @@ use std::{
     fs::File,
     io::{Read, Seek},
     os::windows::prelude::FileExt,
-    path::Path,
+    path::Path, iter::Map, collections::HashMap,
 };
 
 use exoquant::{convert_to_indexed, ditherer, optimizer, Color};
+use glam::Vec3;
 use helpers::validate;
 use mesh::Model;
 use psx_structs::{MeshPSX, TextureCollectionPSX};
@@ -61,22 +62,34 @@ fn export_msh(path_in: String, path_out: String) {
     let mut model_psx_out = ModelPSX::new();
     let mut txc_psx_out = TextureCollectionPSX::new();
 
+    // Make a map based on a grid
+    let grid_size = (1.75, 5.0, 1.75);
+    let mut mesh_grid: HashMap<i128, MeshPSX> = HashMap::new();
+
     // Loop over each submesh in the model
     for (texture_id, (material_name, mesh)) in model.meshes.into_iter().enumerate() {
         // Create PSX mesh for this submesh
         {
-            println!("Creating mesh for '{material_name}'");
-            let mut mesh_psx = MeshPSX { verts: Vec::new() };
+            // Convert each triangle to a PSX triangle
+            for triangle in mesh.verts.chunks(3) {
+                // Find which gridcell this triangle belongs to
+                let average_position = (triangle[0].position + triangle[1].position + triangle[2].position) / 3.0;
+                let grid_x = (average_position.x / grid_size.0).round() as i32;
+                let grid_y = (average_position.y / grid_size.1).round() as i32;
+                let grid_z = (average_position.z / grid_size.2).round() as i32;
+                let map_entry = (grid_x as i128) | (grid_y as i128) << 32 | (grid_z as i128) << 64;
 
-            // Convert each vertex to a PSX vertex
-            for vertex in mesh.verts {
-                mesh_psx
-                    .verts
-                    .push(VertexPSX::from(&vertex, texture_id as u8));
+                // Create entry in grid map if it didn't exist yet
+                if mesh_grid.get(&map_entry).is_none() {
+                    mesh_grid.insert(map_entry, MeshPSX::new());
+                }
+
+                // Add this triangle to that mesh
+                let mesh_psx = mesh_grid.get_mut(&map_entry).unwrap();
+                mesh_psx.verts.push(VertexPSX::from(&triangle[0], texture_id as u8));
+                mesh_psx.verts.push(VertexPSX::from(&triangle[1], texture_id as u8));
+                mesh_psx.verts.push(VertexPSX::from(&triangle[2], texture_id as u8));
             }
-
-            // Then add this submesh to the array
-            model_psx_out.meshes.push(mesh_psx);
         }
 
         // Create PSX texture collection for this submesh
@@ -176,6 +189,11 @@ fn export_msh(path_in: String, path_out: String) {
             txc_psx_out.texture_cells.push(tex_cell);
             txc_psx_out.texture_names.push(material_name);
         }
+    }
+
+    // For every grid cell, put it in the model_psx
+    for (_, mesh) in mesh_grid {
+        model_psx_out.meshes.push(mesh);
     }
 
     validate(model_psx_out.save(Path::new(&(path_out.clone() + ".msh"))));
