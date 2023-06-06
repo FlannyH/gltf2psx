@@ -63,7 +63,7 @@ fn export_msh(path_in: String, path_out: String) {
     let mut txc_psx_out = TextureCollectionPSX::new();
 
     // Make a map based on a grid
-    let grid_size = (1.75, 5.0, 1.75);
+    let grid_size = (1.75, 50000.0, 1.75);
     let mut mesh_grid: HashMap<i128, MeshPSX> = HashMap::new();
 
     // Loop over each submesh in the model
